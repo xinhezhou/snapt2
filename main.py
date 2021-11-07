@@ -1,7 +1,6 @@
 
 from game import Game
-from random import randint
-from random import random
+from utils import play_game_random
 
 # chain * 
 # isolated vertices
@@ -27,28 +26,19 @@ influence_probs = [1, 1, 1, 1]
 
 
 # right now: fix depth 
-depth = 4
+moves = 1
 
-def play_game(g, first_player):
-    player = first_player
-    for i in range(g.depth):
-        if player == 1:
-            g.attack(randint(0, g.n - 1))
-        else:
-            g.defend(randint(0, g.n - 1))
-        player *= -1
-    return g.compute_outcome()
     
 att_outcomes = []
 for i in range(500):
-    g = Game(network, states, rewards, attack_probs, influence_probs, depth)
-    att_outcomes.append(play_game(g, 1))
+    g = Game(network, states, rewards, attack_probs, influence_probs, moves)
+    att_outcomes.append(play_game_random(g, 1))
 
 print(sum(att_outcomes))
 
 def_outcomes = []
 for i in range(500):
-    g = Game(network, states, rewards, attack_probs, influence_probs, depth)
-    def_outcomes.append(play_game(g, -1))
+    g = Game(network, states, rewards, attack_probs, influence_probs, moves)
+    def_outcomes.append(play_game_random(g, -1))
 
 print(sum(def_outcomes))
