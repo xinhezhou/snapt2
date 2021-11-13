@@ -191,7 +191,7 @@ def optimize_model():
     optimizer.step()
 
 
-num_episodes = 500
+num_episodes = 10000
 for i_episode in range(num_episodes):
     # Initialize the environment and state
     g = Game(network, states, values, attack_probs, influence_probs, moves)
@@ -224,8 +224,8 @@ for i_episode in range(num_episodes):
     if i_episode % TARGET_UPDATE == 0:
         target_net.load_state_dict(policy_net.state_dict())
 
-print(losses)
-print(rewards)
+# print(losses)
+# print(rewards)
 print('Complete')
 
 average_rewards = []
@@ -238,14 +238,16 @@ for i in x:
 
 
 data = [average_losses, average_rewards]
+title = ["losses", "rewards"]
 
 fig, ax = plt.subplots(nrows=2, ncols=1)
 
 i = 0
 for row in ax:
     row.plot(x, data[i])
+    row.title(title[i])
     i += 1
 
 
 
-plt.savefig("dqn_progress.pdf")
+plt.savefig("dqn_progress_10000.pdf")
