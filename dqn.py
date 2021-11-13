@@ -12,7 +12,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-import torchvision.transforms as T
+# import torchvision.transforms as T
 
 
 from game import Game
@@ -64,7 +64,7 @@ states = [1, 1, 0, 1]
 
 # anything between 0 and 1
 # distribution of rewards
-rewards = [1, 1, 1, 1]
+values = [1, 1, 1, 1]
 
 attack_probs = [1, 1, 1, 1]
 
@@ -173,9 +173,9 @@ def optimize_model():
     # This is merged based on the mask, such that we'll have either the expected
     # state value or 0 in case the state was final.
     next_state_values = torch.zeros(BATCH_SIZE, device=device)
-    next_state_values[non_final_mask] = target_net(non_final_next_states).max(1)[0].detach()
+    # next_state_values[non_final_mask] = target_net(non_final_next_states).max(1)[0].detach()
     # Compute the expected Q values
-    expected_state_action_values = (next_state_values * GAMMA) + reward_batch
+    expected_state_action_values = next_state_values + reward_batch
 
     # Compute Huber loss
     criterion = nn.SmoothL1Loss()
@@ -184,17 +184,17 @@ def optimize_model():
     # Optimize the model
     optimizer.zero_grad()
     loss.backward()
-    rewards.append(reward)
-    losses.append(loss)
+    rewards.append(batch.reward[-1])
+    losses.append(loss.item())
     for param in policy_net.parameters():
         param.grad.data.clamp_(-1, 1)
     optimizer.step()
 
 
-num_episodes = 50000
+num_episodes = 500
 for i_episode in range(num_episodes):
     # Initialize the environment and state
-    g = Game(network, states, rewards, attack_probs, influence_probs, moves)
+    g = Game(network, states, values, attack_probs, influence_probs, moves)
     state = g.get_states()
     for t in range(g.moves):
         # Select and perform an action
@@ -224,6 +224,28 @@ for i_episode in range(num_episodes):
     if i_episode % TARGET_UPDATE == 0:
         target_net.load_state_dict(policy_net.state_dict())
 
+print(losses)
+print(rewards)
 print('Complete')
-plt.ioff()
-plt.show()
+
+average_rewards = []
+average_losses = []
+
+x = range(num_episodes // BATCH_SIZE - 1)
+for i in x:
+    average_rewards.append(np.mean(rewards[i*BATCH_SIZE: (i+1)*BATCH_SIZE]))
+    average_losses.append(np.mean(losses[i*BATCH_SIZE: (i+1)*BATCH_SIZE]))
+
+
+data = [average_losses, average_rewards]
+
+fig, ax = plt.subplots(nrows=2, ncols=1)
+
+i = 0
+for row in ax:
+    row.plot(x, data[i])
+    i += 1
+
+
+
+plt.savefig("dqn_progress.pdf")
