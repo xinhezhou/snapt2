@@ -72,13 +72,16 @@ influence_probs = [1, 1, 1, 1]
 
 moves = 1
 
+rewards = []
+losses = []
+
 # plt.figure()
 # plt.imshow(get_screen().cpu().squeeze(0).permute(1, 2, 0).numpy())
 # plt.title('Example extracted screen')
 # plt.show(block=True)
 
-BATCH_SIZE = 128
-GAMMA = 0.999
+BATCH_SIZE = 10
+GAMMA = 1
 EPS_START = 0.9
 EPS_END = 0.05
 EPS_DECAY = 200
@@ -109,9 +112,12 @@ def select_action(state):
             # t.max(1) will return largest column value of each row.
             # second column on max result is index of where max element was
             # found, so we pick action with the larger expected reward.
-            return np.argmax(policy_net(state))
+            # print(policy_net(state).max(0)[1])
+
+            return policy_net(state).max(0)[1]
     else:
-        return torch.tensor(random.randrange(num_device), device=device, dtype=torch.long)
+        # print(torch.tensor([random.randrange(num_device)], device=device, dtype=torch.long))
+        return torch.tensor([random.randrange(num_device)], device=device, dtype=torch.long)
 
 
 episode_durations = []
@@ -149,11 +155,12 @@ def optimize_model():
     # (a final state would've been the one after which simulation ended)
     non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
                                           batch.next_state)), device=device, dtype=torch.bool)
-    non_final_next_states = torch.cat([s for s in batch.next_state
+    non_final_next_states = torch.stack([s for s in batch.next_state
                                                 if s is not None])
-    state_batch = torch.cat(batch.state)
-    action_batch = torch.cat(batch.action)
-    reward_batch = torch.cat(batch.reward)
+    
+    state_batch = torch.stack(batch.state)
+    action_batch = torch.stack(batch.action)
+    reward_batch = torch.stack(batch.reward)
 
     # Compute Q(s_t, a) - the model computes Q(s_t), then we select the
     # columns of actions taken. These are the actions which would've been taken
@@ -177,12 +184,14 @@ def optimize_model():
     # Optimize the model
     optimizer.zero_grad()
     loss.backward()
+    rewards.append(reward)
+    losses.append(loss)
     for param in policy_net.parameters():
         param.grad.data.clamp_(-1, 1)
     optimizer.step()
 
 
-num_episodes = 50
+num_episodes = 50000
 for i_episode in range(num_episodes):
     # Initialize the environment and state
     g = Game(network, states, rewards, attack_probs, influence_probs, moves)
@@ -206,9 +215,10 @@ for i_episode in range(num_episodes):
         state = next_state
 
         # Perform one step of the optimization (on the policy network)
+        # print(t)
         optimize_model()
         episode_durations.append(reward)
-        plot_durations()
+        # plot_durations()
         break
     # Update the target network, copying all weights and biases in DQN
     if i_episode % TARGET_UPDATE == 0:

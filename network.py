@@ -14,6 +14,7 @@ class DQN(nn.Module):
 
         
     def forward(self, x):
+        # print(x)
         x = x.to(self.device)
         x = F.relu(self.linear1(x))
         x = F.softmax(self.linear2(x), dim=0)
