@@ -191,7 +191,7 @@ def optimize_model():
     optimizer.step()
 
 
-num_episodes = 10000
+num_episodes = 50000
 for i_episode in range(num_episodes):
     # Initialize the environment and state
     g = Game(network, states, values, attack_probs, influence_probs, moves)
@@ -245,7 +245,7 @@ fig, ax = plt.subplots(nrows=2, ncols=1)
 i = 0
 for row in ax:
     row.plot(x, data[i])
-    row.title(title[i])
+    row.title.set_text(title[i])
     i += 1
 
 
