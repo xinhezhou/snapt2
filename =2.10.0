@@ -1,0 +1,12 @@
+Collecting pygad
+  Downloading pygad-2.16.1-py3-none-any.whl (53 kB)
+Requirement already satisfied: matplotlib in /Users/xmzhou/opt/anaconda3/lib/python3.8/site-packages (from pygad) (3.3.4)
+Requirement already satisfied: numpy in /Users/xmzhou/opt/anaconda3/lib/python3.8/site-packages (from pygad) (1.16.4)
+Requirement already satisfied: cycler>=0.10 in /Users/xmzhou/opt/anaconda3/lib/python3.8/site-packages (from matplotlib->pygad) (0.10.0)
+Requirement already satisfied: pillow>=6.2.0 in /Users/xmzhou/opt/anaconda3/lib/python3.8/site-packages (from matplotlib->pygad) (8.2.0)
+Requirement already satisfied: python-dateutil>=2.1 in /Users/xmzhou/opt/anaconda3/lib/python3.8/site-packages (from matplotlib->pygad) (2.8.1)
+Requirement already satisfied: kiwisolver>=1.0.1 in /Users/xmzhou/opt/anaconda3/lib/python3.8/site-packages (from matplotlib->pygad) (1.3.1)
+Requirement already satisfied: pyparsing!=2.0.4,!=2.1.2,!=2.1.6,>=2.0.3 in /Users/xmzhou/opt/anaconda3/lib/python3.8/site-packages (from matplotlib->pygad) (2.4.7)
+Requirement already satisfied: six in /Users/xmzhou/opt/anaconda3/lib/python3.8/site-packages (from cycler>=0.10->matplotlib->pygad) (1.15.0)
+Installing collected packages: pygad
+Successfully installed pygad-2.16.1
