@@ -191,7 +191,7 @@ def optimize_model():
     optimizer.step()
 
 
-num_episodes = 500
+num_episodes = 50000
 for i_episode in range(num_episodes):
     # Initialize the environment and state
     g = Game(network, states, values, attack_probs, influence_probs, moves)
@@ -250,4 +250,4 @@ for row in ax:
 
 
 
-plt.savefig("dqn_progress_500.pdf")
+plt.savefig("dqn_progress_50000.pdf")
