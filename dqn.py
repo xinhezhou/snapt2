@@ -191,7 +191,7 @@ def optimize_model():
     optimizer.step()
 
 
-num_episodes = 50000
+num_episodes = 500
 for i_episode in range(num_episodes):
     # Initialize the environment and state
     g = Game(network, states, values, attack_probs, influence_probs, moves)
