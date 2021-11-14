@@ -184,7 +184,7 @@ def optimize_model():
     # Optimize the model
     optimizer.zero_grad()
     loss.backward()
-    rewards.append(batch.reward[-1])
+    rewards.append(batch.reward[-1].item())
     losses.append(loss.item())
     for param in policy_net.parameters():
         param.grad.data.clamp_(-1, 1)
@@ -250,4 +250,4 @@ for row in ax:
 
 
 
-plt.savefig("dqn_progress_50000.pdf")
+plt.savefig("dqn_progress_500.pdf")
