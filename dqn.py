@@ -250,4 +250,4 @@ for row in ax:
 
 
 
-plt.savefig("dqn_progress_10000.pdf")
+plt.savefig("dqn_progress_50000.pdf")
