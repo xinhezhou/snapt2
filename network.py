@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class DQN(nn.Module):
+class Network(nn.Module):
 
     def __init__(self, num_inputs, num_actions, hidden_size, device, learning_rate=1e-4):
         super().__init__()
