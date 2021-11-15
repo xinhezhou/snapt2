@@ -39,13 +39,13 @@ def select_action(state):
     action_dist = policy_net(state)
     if sample > eps_threshold:
         with torch.no_grad():
-            action = np.argmax(action_dist)
+            action = torch.argmax(action_dist)
     else:
         action = random.randrange(num_device)
     return action, action_dist
 
 
-num_episodes = 10
+num_episodes = 1
 for i_episode in range(num_episodes):
     # Initialize the environment and state
     g = Game(network, states, values, attack_probs, influence_probs, moves)
