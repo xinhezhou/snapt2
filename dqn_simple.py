@@ -47,7 +47,7 @@ def select_action(state):
     return action, action_dist
 
 
-num_episodes = 100
+num_episodes = 50000
 for i_episode in range(num_episodes):
     # Initialize the environment and state
     g = Game(network, states, values, attack_probs, influence_probs, moves)
