@@ -13,6 +13,7 @@ from game import Game
 from utils import compute_attcker_reward
 from network import Network
 from game_setup import *
+from utils import *
 
 # set up matplotlib
 is_ipython = 'inline' in matplotlib.get_backend()
@@ -31,6 +32,7 @@ Transition = namedtuple('Transition',
 policy_net = Network(num_device, num_device, 10, device).to(device)
 optimizer = optim.Adam(policy_net.parameters())
 loss_fn = nn.SmoothL1Loss()
+BATCH_SIZE = 10
 
 def select_action(state):
     # global steps_done
@@ -45,7 +47,7 @@ def select_action(state):
     return action, action_dist
 
 
-num_episodes = 1
+num_episodes = 100
 for i_episode in range(num_episodes):
     # Initialize the environment and state
     g = Game(network, states, values, attack_probs, influence_probs, moves)
@@ -60,7 +62,7 @@ for i_episode in range(num_episodes):
         state = next_state
 
         # Perform one step of the optimization (on the policy network)
-        print(reward, action_dist[action])
+        # print(reward, action_dist[action])
         loss = loss_fn(reward, action_dist[action])
         
     # Optimize the model
@@ -72,4 +74,17 @@ for i_episode in range(num_episodes):
 
 print(losses)
 print(rewards)
-# plt.savefig("dqn_progress_500000.pdf")
+average_rewards = []
+average_losses = []
+
+x = range(num_episodes // BATCH_SIZE)
+for i in x:
+    average_rewards.append(np.mean(rewards[i*BATCH_SIZE: (i+1)*BATCH_SIZE]))
+    average_losses.append(np.mean(losses[i*BATCH_SIZE: (i+1)*BATCH_SIZE]))
+
+# x = range(num_episodes // BATCH_SIZE)
+fig, ax = plt.subplots(2)
+# print(ax[0])
+add_suplot(ax[0], x, average_losses, "losses")
+add_suplot(ax[1], x, average_rewards, "rewards")
+plt.savefig("dqn_simple.pdf")

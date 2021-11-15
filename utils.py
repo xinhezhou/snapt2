@@ -20,3 +20,8 @@ def compute_attcker_reward(init_state, next_state, values):
         elif next_state[i] == 1 and init_state[i] == 0:
             reward -= i
     return reward
+
+
+def add_suplot(subplot, x, y, title):
+    subplot.plot(x, y)
+    subplot.title.set_text(title)
