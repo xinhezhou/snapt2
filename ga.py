@@ -1,28 +1,14 @@
 import torch
 import pygad.torchga as torchga
 import pygad
+import numpy as np
+import torch.nn as nn
+import torch.optim as optim
+
 from network import Network
-
-def fitness_func(solution, sol_idx):
-    # change this to the optimize function
-    global data_inputs, data_outputs, torch_ga, model, loss_function
-
-    model_weights_dict = torchga.model_weights_as_dict(model=model,
-                                                       weights_vector=solution)
-
-    # Use the current solution as the model parameters.
-    model.load_state_dict(model_weights_dict)
-
-    predictions = model(data_inputs)
-    abs_error = loss_function(predictions, data_outputs).detach().numpy() + 0.00000001
-
-    solution_fitness = 1.0 / abs_error
-
-    return solution_fitness
-
-def callback_generation(ga_instance):
-    print("Generation = {generation}".format(generation=ga_instance.generations_completed))
-    print("Fitness    = {fitness}".format(fitness=ga_instance.best_solution()[1]))
+from game import Game
+from utils import compute_attcker_reward
+import random
 
 # Create the PyTorch model.
 # Game Init
@@ -45,24 +31,81 @@ moves = 1
 rewards = []
 losses = []
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+test_rewards = []
 
 model = Network(num_device, num_device, 10, device).to(device)
-# print(model)
+loss_fn = nn.SmoothL1Loss()
+# optimizer = optim.Adam(model.parameters())
+
+def test():
+    rewards = []
+    g = Game(network, states, values, attack_probs, influence_probs, moves)
+    for t in range(g.moves):
+        state = g.get_states()
+        action, action_dist = select_action(model, state, 0)
+        g.attack(action)
+        next_state = g.get_states()
+        reward = compute_attcker_reward(state, next_state, g.get_values())
+        rewards.append(reward)
+        # print(action, state, next_state)
+    # print(rewards)
+    return np.mean(rewards)
+    
+def select_action(policy_net, state, eps):
+    # global steps_done
+    sample = random.random()
+    action_dist = policy_net(state)
+    if sample > eps:
+        with torch.no_grad():
+            action = torch.argmax(action_dist)
+    else:
+        action = random.randrange(num_device)
+    return action, action_dist
+
+
+def fitness_func(solution, sol_idx):
+    # change this to the optimize function
+    model_weights_dict = torchga.model_weights_as_dict(model=model,
+                                                       weights_vector=solution)
+
+    # Use the current solution as the model parameters.
+    model.load_state_dict(model_weights_dict)
+    g = Game(network, states, values, attack_probs, influence_probs, moves)
+    state = g.get_states()
+    losses = []
+    for t in range(g.moves):
+        # Select and perform an action
+        action, action_dist = select_action(model, state, 0.2)
+        g.attack(action)
+        next_state = g.get_states()
+        reward = compute_attcker_reward(state, next_state, g.get_values())
+        reward = torch.tensor([reward], device=device)
+        state = next_state
+
+        # Perform one step of the optimization (on the policy network)
+        # print(reward, action_dist[action])
+        loss = loss_fn(reward, action_dist[action])
+        losses.append(loss.item())
+        test_rewards.append(test())
+    
+    solution_fitness = 1.0 / (np.mean(losses) + 0.00001)
+
+    return solution_fitness
+
+        
+
+def callback_generation(ga_instance):
+    print("Generation = {generation}".format(generation=ga_instance.generations_completed))
+    print("Fitness    = {fitness}".format(fitness=ga_instance.best_solution()[1]))
+
 
 # Create an instance of the pygad.torchga.TorchGA class to build the initial population.
 torch_ga = torchga.TorchGA(model=model,
                            num_solutions=10)
 
-loss_function = torch.nn.L1Loss()
-
-# Data inputs
-data_inputs = torch.tensor([[0.02, 0.1, 0.15, 0.3]])
-
-# Data outputs
-data_outputs = torch.tensor([[0.02, 0.1, 0.15, 0.3]])
 
 # Prepare the PyGAD parameters. Check the documentation for more information: https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#pygad-ga-class
-num_generations = 250 # Number of generations.
+num_generations = 10 # Number of generations.
 num_parents_mating = 5 # Number of solutions to be selected as parents in the mating pool.
 initial_population = torch_ga.population_weights # Initial population of network weights
 parent_selection_type = "sss" # Type of parent selection.
@@ -96,8 +139,10 @@ print("Index of the best solution : {solution_idx}".format(solution_idx=solution
 best_solution_weights = torchga.model_weights_as_dict(model=model,
                                                       weights_vector=solution)
 model.load_state_dict(best_solution_weights)
-predictions = model(data_inputs)
-print("Predictions : \n", predictions.detach().numpy())
+# predictions = model(data_inputs)
+# print("Predictions : \n", predictions.detach().numpy())
 
-abs_error = loss_function(predictions, data_outputs)
-print("Absolute Error : ", abs_error.detach().numpy())
+# abs_error = loss_function(predictions, data_outputs)
+# print("Absolute Error : ", abs_error.detach().numpy())
+
+print(test_rewards)

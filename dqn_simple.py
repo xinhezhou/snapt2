@@ -79,13 +79,13 @@ for i_episode in range(num_episodes):
         # print(reward, action_dist[action])
         loss = loss_fn(reward, action_dist[action])
         
-    # Optimize the model
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
-    rewards.append(reward.item())
-    test_rewards.append(test())
-    losses.append(loss.item())
+        # Optimize the model
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        rewards.append(reward.item())
+        test_rewards.append(test())
+        losses.append(loss.item())
 
 # print(losses)
 # print(rewards)
