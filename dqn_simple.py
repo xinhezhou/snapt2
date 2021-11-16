@@ -32,14 +32,14 @@ Transition = namedtuple('Transition',
 policy_net = Network(num_device, num_device, 10, device).to(device)
 optimizer = optim.Adam(policy_net.parameters())
 loss_fn = nn.SmoothL1Loss()
+test_rewards = []
 BATCH_SIZE = 10
 
-def select_action(state):
+def select_action(state, eps):
     # global steps_done
     sample = random.random()
-    eps_threshold = 0.5
     action_dist = policy_net(state)
-    if sample > eps_threshold:
+    if sample > eps:
         with torch.no_grad():
             action = torch.argmax(action_dist)
     else:
@@ -47,14 +47,28 @@ def select_action(state):
     return action, action_dist
 
 
-num_episodes = 50000
+def test():
+    rewards = []
+    g = Game(network, states, values, attack_probs, influence_probs, moves)
+    for t in range(g.moves):
+        state = g.get_states()
+        action, action_dist = select_action(state, 0)
+        g.attack(action)
+        next_state = g.get_states()
+        reward = compute_attcker_reward(state, next_state, g.get_values())
+        rewards.append(reward)
+        # print(action, state, next_state)
+    # print(rewards)
+    return np.mean(rewards)
+
+num_episodes = 1000
 for i_episode in range(num_episodes):
     # Initialize the environment and state
     g = Game(network, states, values, attack_probs, influence_probs, moves)
     state = g.get_states()
     for t in range(g.moves):
         # Select and perform an action
-        action, action_dist = select_action(state)
+        action, action_dist = select_action(state, 0.2)
         g.attack(action)
         next_state = g.get_states()
         reward = compute_attcker_reward(state, next_state, g.get_values())
@@ -68,18 +82,21 @@ for i_episode in range(num_episodes):
     # Optimize the model
     optimizer.zero_grad()
     loss.backward()
-    rewards.append(reward.item())
-    losses.append(loss.item())
     optimizer.step()
+    rewards.append(reward.item())
+    test_rewards.append(test())
+    losses.append(loss.item())
 
-print(losses)
-print(rewards)
-average_rewards = []
+# print(losses)
+# print(rewards)
+# print(test_rewards)
 average_losses = []
+average_rewards = []
 
+x = range(num_episodes)
 x = range(num_episodes // BATCH_SIZE)
 for i in x:
-    average_rewards.append(np.mean(rewards[i*BATCH_SIZE: (i+1)*BATCH_SIZE]))
+    average_rewards.append(np.mean(test_rewards[i*BATCH_SIZE: (i+1)*BATCH_SIZE]))
     average_losses.append(np.mean(losses[i*BATCH_SIZE: (i+1)*BATCH_SIZE]))
 
 # x = range(num_episodes // BATCH_SIZE)
