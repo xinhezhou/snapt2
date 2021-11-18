@@ -50,7 +50,7 @@ def select_action(state, eps):
 def test():
     rewards = []
     game_states = states[:]
-    game_states[2] = 0
+    game_states[random.randint(0, num_device-1)] = 0
     g = Game(network, game_states, values, attack_probs, influence_probs, moves)
     for t in range(g.moves):
         state = g.get_states()
@@ -67,7 +67,7 @@ num_episodes = 1000
 for i_episode in range(num_episodes):
     # Initialize the environment and state
     game_states = states[:]
-    game_states[2] = 0
+    game_states[random.randint(0, num_device-1)] = 0
     g = Game(network, game_states, values, attack_probs, influence_probs, moves)
     state = g.get_states()
     for t in range(g.moves):
@@ -88,11 +88,11 @@ for i_episode in range(num_episodes):
         loss.backward()
         optimizer.step()
         rewards.append(reward.item())
-        test_rewards.append(test())
+        # test_rewards.append(test())
         losses.append(loss.item())
 
-# print(losses)
-# print(rewards)
+print(losses)
+print(rewards)
 # print(test_rewards)
 average_losses = []
 average_rewards = []
@@ -100,12 +100,12 @@ average_rewards = []
 # x = range(num_episodes)
 x = range(num_episodes // BATCH_SIZE)
 for i in x:
-    average_rewards.append(np.mean(test_rewards[i*BATCH_SIZE: (i+1)*BATCH_SIZE]))
+    average_rewards.append(np.mean(rewards[i*BATCH_SIZE: (i+1)*BATCH_SIZE]))
     average_losses.append(np.mean(losses[i*BATCH_SIZE: (i+1)*BATCH_SIZE]))
 
 # x = range(num_episodes // BATCH_SIZE)
 fig, ax = plt.subplots(2)
-# print(ax[0])
+# # print(ax[0])
 add_suplot(ax[0], x, average_losses, "losses")
 add_suplot(ax[1], x, average_rewards, "rewards")
-plt.savefig("dqn_simple.pdf")
+plt.savefig("dqn_simple2.pdf")

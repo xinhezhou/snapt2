@@ -8,7 +8,7 @@ network = [[0, 0, 0, 0],
 
 # location of vulnerability: center*, side
 # number of vulnerable sites : 1
-states = [1, 1, 0, 1]
+states = [1, 1, 1, 1]
 
 # anything between 0 and 1
 # distribution of rewards
