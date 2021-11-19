@@ -50,11 +50,15 @@ def select_action(state, eps):
 def test():
     rewards = []
     game_states = states[:]
-    game_states[random.randint(0, num_device-1)] = 0
-    g = Game(network, game_states, values, attack_probs, influence_probs, moves)
+    game_values = values[:]
+    game_values[1] = 2
+    game_states[1] = 0
+    game_states[2] = 0
+    g = Game(network, game_states, game_values, attack_probs, influence_probs, moves)
     for t in range(g.moves):
         state = g.get_states()
         action, action_dist = select_action(state, 0)
+        # print(action)
         g.attack(action)
         next_state = g.get_states()
         reward = compute_attcker_reward(state, next_state, g.get_values())
@@ -63,12 +67,15 @@ def test():
     # print(rewards)
     return np.mean(rewards)
 
-num_episodes = 5000
+num_episodes = 1000
 for i_episode in range(num_episodes):
     # Initialize the environment and state
     game_states = states[:]
-    game_states[random.randint(0, num_device-1)] = 0
-    g = Game(network, game_states, values, attack_probs, influence_probs, moves)
+    game_values = values[:]
+    game_values[1] = 2
+    game_states[1] = 0
+    game_states[2] = 0
+    g = Game(network, game_states, game_values, attack_probs, influence_probs, moves)
     state = g.get_states()
     for t in range(g.moves):
         # Select and perform an action
@@ -87,13 +94,13 @@ for i_episode in range(num_episodes):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        rewards.append(reward.item())
+        # rewards.append(reward.item())
         test_rewards.append(test())
         losses.append(loss.item())
 
 print(losses)
-print(rewards)
-# print(test_rewards)
+# print(rewards)
+print(test_rewards)
 average_losses = []
 average_rewards = []
 
@@ -105,7 +112,7 @@ for i in x:
 
 # x = range(num_episodes // BATCH_SIZE)
 fig, ax = plt.subplots(2)
-# # print(ax[0])
+# print(ax[0])
 add_suplot(ax[0], x, average_losses, "losses")
 add_suplot(ax[1], x, average_rewards, "rewards")
-plt.savefig("dqn_simple2.pdf")
+plt.savefig("dqn_simple3.pdf")
