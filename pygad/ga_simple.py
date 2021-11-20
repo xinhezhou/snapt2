@@ -12,59 +12,15 @@ import random
 # import matplotlib
 import matplotlib.pyplot as plt
 
-# Create the PyTorch model.
-# Game Init
-num_device = 4
-network = [[0, 0, 0, 0],
-           [0, 0, 0, 0],
-           [0, 0, 0, 0], 
-           [0, 0, 0, 0]]
-
-# location of vulnerability: center*, side
-# number of vulnerable sites : 1
-states = [1, 1, 0, 1]
-
-# anything between 0 and 1
-# distribution of rewards
-values = [1, 1, 1, 1]
-attack_probs = [1, 1, 1, 1]
-influence_probs = [1, 1, 1, 1]
-moves = 1
-rewards = []
-losses = []
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-test_rewards = []
-BATCH_SIZE = 10
-
-model = Network(num_device, num_device, 10, device).to(device)
+model = Network(4, 4, 10, device).to(device)
 loss_fn = nn.SmoothL1Loss()
-# optimizer = optim.Adam(model.parameters())
+BATCH_SIZE = 10
+games = []
 
-def test():
-    rewards = []
-    g = Game(network, states, values, attack_probs, influence_probs, moves)
-    for t in range(g.moves):
-        state = g.get_states()
-        action, action_dist = select_action(model, state, 0)
-        g.attack(action)
-        next_state = g.get_states()
-        reward = compute_attcker_reward(state, next_state, g.get_values())
-        rewards.append(reward)
-        # print(action, state, next_state)
-    # print(rewards)
-    return np.mean(rewards)
-    
-def select_action(policy_net, state, eps):
-    # global steps_done
-    sample = random.random()
-    action_dist = policy_net(state)
-    if sample > eps:
-        with torch.no_grad():
-            action = torch.argmax(action_dist)
-    else:
-        action = random.randrange(num_device)
-    return action, action_dist
-
+train_rewards = []
+test_rewards = []
+losses = []
 
 def fitness_func(solution, sol_idx):
     # change this to the optimize function
@@ -73,7 +29,7 @@ def fitness_func(solution, sol_idx):
 
     # Use the current solution as the model parameters.
     model.load_state_dict(model_weights_dict)
-    g = Game(network, states, values, attack_probs, influence_probs, moves)
+    g = random.sample(games)
     state = g.get_states()
     
     solution_fitness = 0
@@ -144,17 +100,4 @@ best_solution_weights = torchga.model_weights_as_dict(model=model,
                                                       weights_vector=solution)
 model.load_state_dict(best_solution_weights)
 
-
-average_losses = []
-average_rewards = []
-
-x = range(num_generations // BATCH_SIZE)
-for i in x:
-    average_rewards.append(np.mean(test_rewards[i*BATCH_SIZE: (i+1)*BATCH_SIZE]))
-    average_losses.append(np.mean(losses[i*BATCH_SIZE: (i+1)*BATCH_SIZE]))
-
-fig, ax = plt.subplots(2)
-add_suplot(ax[0], x, average_losses, "losses")
-add_suplot(ax[1], x, average_rewards, "rewards")
-plt.savefig("ga_simple.pdf")
-print(test_rewards)
+plot(losses, test_rewards, BATCH_SIZE)

@@ -1,5 +1,6 @@
+from game.game import Game
 
-# Game Init
+# one config w/ one vulnerable device
 num_device = 4
 network = [[0, 0, 0, 0],
            [0, 0, 0, 0],
@@ -20,5 +21,7 @@ influence_probs = [1, 1, 1, 1]
 
 moves = 1
 
-rewards = []
-losses = []
+states[2] = 0
+states[1] = 0
+values[1] = 2
+games = [Game(network, states, values, attack_probs, influence_probs, moves)]
