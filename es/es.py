@@ -1,22 +1,19 @@
 import torch
 import pygad.torchga as torchga
 import pygad
-import numpy as np
 import torch.nn as nn
-import torch.optim as optim
-
-from network import Network
-from game import Game
-from utils import *
 import random
-# import matplotlib
-import matplotlib.pyplot as plt
+
+import sys
+sys.path.append('..')
+from network import Network
+from utils import compute_attcker_reward, select_action, test, plot
+from configA import games 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = Network(4, 4, 10, device).to(device)
 loss_fn = nn.SmoothL1Loss()
 BATCH_SIZE = 10
-games = []
 
 train_rewards = []
 test_rewards = []
@@ -29,13 +26,13 @@ def fitness_func(solution, sol_idx):
 
     # Use the current solution as the model parameters.
     model.load_state_dict(model_weights_dict)
-    g = random.sample(games)
+    g = random.choice(games)
     state = g.get_states()
     
     solution_fitness = 0
     for t in range(g.moves):
         # Select and perform an action
-        action, action_dist = select_action(model, state, 0.2)
+        action, action_dist = select_action(model, state, 0)
         g.attack(action)
         next_state = g.get_states()
         reward = compute_attcker_reward(state, next_state, g.get_values())
@@ -45,11 +42,13 @@ def fitness_func(solution, sol_idx):
         # Perform one step of the optimization (on the policy network)
         # print(reward, action_dist[action])
         loss = loss_fn(reward, action_dist[action])
-        test_rewards.append(test())
+        test_rewards.append(test(model, g))
+        train_rewards.append(reward.item())
         losses.append(loss.item())
     
         solution_fitness += 1.0 / (loss.item() + 0.00001)
 
+        print(reward, loss.item(), solution_fitness)
     return solution_fitness
 
         
@@ -88,16 +87,19 @@ ga_instance = pygad.GA(num_generations=num_generations,
 ga_instance.run()
 
 # After the generations complete, some plots are showed that summarize how the outputs/fitness values evolve over generations.
-# ga_instance.plot_result(title="PyGAD & PyTorch - Iteration vs. Fitness", linewidth=4)
+ga_instance.plot_fitness(title="PyGAD & PyTorch - Iteration vs. Fitness", linewidth=4)
 
 # Returning the details of the best solution.
-solution, solution_fitness, solution_idx = ga_instance.best_solution()
-print("Fitness value of the best solution = {solution_fitness}".format(solution_fitness=solution_fitness))
-print("Index of the best solution : {solution_idx}".format(solution_idx=solution_idx))
+# solution, solution_fitness, solution_idx = ga_instance.best_solution()
+# print("Fitness value of the best solution = {solution_fitness}".format(solution_fitness=solution_fitness))
+# print("Index of the best solution : {solution_idx}".format(solution_idx=solution_idx))
 
 # Fetch the parameters of the best solution.
-best_solution_weights = torchga.model_weights_as_dict(model=model,
-                                                      weights_vector=solution)
-model.load_state_dict(best_solution_weights)
+# best_solution_weights = torchga.model_weights_as_dict(model=model,
+#                                                       weights_vector=solution)
+# model.load_state_dict(best_solution_weights)
 
-plot(losses, test_rewards, BATCH_SIZE)
+print(losses)
+print(train_rewards)
+print(test_rewards)
+plot(test_rewards, losses, "configA_es.pdf", BATCH_SIZE)

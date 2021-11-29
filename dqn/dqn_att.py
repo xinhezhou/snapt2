@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import sys
 sys.path.append('..')
-from utils import compute_attcker_reward, select_action, test
+from utils import compute_attcker_reward, select_action, test_att
 
 
 
@@ -33,7 +33,7 @@ def train(games, model, optimizer, loss_fn, num_episodes, device):
 
             # record test results 
             train_rewards.append(reward.item())
-            test_rewards.append(test(model, g))
+            test_rewards.append(test_att(model, g))
             losses.append(loss.item())
     return train_rewards, test_rewards, losses
 

@@ -1,4 +1,4 @@
-from random import randint
+from random import randint, uniform
 import matplotlib.pyplot as plt
 import random
 import torch
@@ -15,13 +15,20 @@ def play_game_random(g, first_player):
     return g.compute_outcome()
 
 def compute_attcker_reward(init_state, next_state, values):
-    # delta compromised - delta secured
+    # delta compromised + delta vulnerable
     reward = 0
     for i in range(len(init_state)):
-        if next_state[i] == -1 and init_state[i] == 0:
+        if init_state[i] == 1 and next_state[i] == 0:
+            reward += 0.1 * values[i]
+        if init_state[i] == 0 and next_state[i] == -1:
+            reward += 0.9 * values[i]
+    return reward / sum(values)
+
+def compute_defender_reward(init_state, next_state, values):
+    reward = 0
+    for i in range(len(init_state)):
+        if init_state[i] == 0 and next_state[i] == 1:
             reward += values[i]
-        elif next_state[i] == 1 and init_state[i] == 0:
-            reward -= values[i]
     return reward / sum(values)
 
 def select_action(policy_net, state, eps):
@@ -35,7 +42,7 @@ def select_action(policy_net, state, eps):
         action = random.randrange(len(state))
     return action, action_dist
 
-def test(model, game):
+def test_att(model, game):
     game.reset()
     rewards = []
     for t in range(game.moves):
@@ -44,6 +51,19 @@ def test(model, game):
         game.attack(action)
         next_state = game.get_states()
         reward = compute_attcker_reward(state, next_state, game.get_values())
+        rewards.append(reward)
+    game.reset()
+    return sum(rewards) / len(rewards)
+
+def test_def(model, game):
+    game.reset()
+    rewards = []
+    for t in range(game.moves):
+        state = game.get_states()
+        action, action_dist = select_action(model, state, 0)
+        game.defend(action)
+        next_state = game.get_states()
+        reward = compute_defender_reward(state, next_state, game.get_values())
         rewards.append(reward)
     game.reset()
     return sum(rewards) / len(rewards)

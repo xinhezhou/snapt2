@@ -1,14 +1,15 @@
-
-from network import Network
 import torch
 import torch.optim as optim
 import torch.nn as nn
-from dqn import train
-from utils import plot
+from dqn_def import train
 
-# from configA import games 
+import sys
+sys.path.append('..')
+from network import Network
+from utils import plot
+from configD import games 
 # from configB import games
-from configC import games
+# from configC import games
 
 
 # DQN Set Up
@@ -27,6 +28,6 @@ print(losses)
 print(train_rewards)
 print(test_rewards)
 
-# plot(losses, test_rewards, "configA_dqn.pdf", BATCH_SIZE)
+plot(test_rewards, losses, "configD_dqn_def.pdf", BATCH_SIZE)
 # plot(losses, test_rewards, "configB_dqn.pdf", BATCH_SIZE)
-plot(losses, test_rewards, "configC_dqn.pdf", BATCH_SIZE)
+# plot(losses, test_rewards, "configC_dqn.pdf", BATCH_SIZE)
