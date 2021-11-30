@@ -1,105 +1,74 @@
+import numpy as np
 import torch
-import pygad.torchga as torchga
-import pygad
-import torch.nn as nn
 import random
 
 import sys
 sys.path.append('..')
 from network import Network
-from utils import compute_attcker_reward, select_action, test, plot
+from utils import compute_attcker_reward, select_action, test_att, plot
 from configA import games 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = Network(4, 4, 10, device).to(device)
-loss_fn = nn.SmoothL1Loss()
 BATCH_SIZE = 10
 
 train_rewards = []
 test_rewards = []
 losses = []
 
-def fitness_func(solution, sol_idx):
-    # change this to the optimize function
-    model_weights_dict = torchga.model_weights_as_dict(model=model,
-                                                       weights_vector=solution)
 
-    # Use the current solution as the model parameters.
-    model.load_state_dict(model_weights_dict)
+initial_weights  = {}
+state_dict = model.state_dict()
+# print("Model's state_dict:")
+for param in state_dict:
+    initial_weights[param] = torch.from_numpy(np.random.randn(*state_dict[param].size()))
+    # print(initial_weights[param].size(), state_dict[param].size())
+# print(initial_weights.keys(), state_dict.keys())
+
+def update(weights, sigma, jitters):
+    new_weights = {}
+    for param in state_dict:
+        jitter = torch.from_numpy(np.random.randn(*state_dict[param].size()))
+        jitters[param].append(jitter)
+        new_weights[param] = weights[param] + sigma * jitter
+    return new_weights
+
+def fitness(w, train_rewards, test_rewards):
+    model.load_state_dict(w)
     g = random.choice(games)
     state = g.get_states()
-    
-    solution_fitness = 0
+    total_reward = 0
+
     for t in range(g.moves):
         # Select and perform an action
         action, action_dist = select_action(model, state, 0)
         g.attack(action)
         next_state = g.get_states()
         reward = compute_attcker_reward(state, next_state, g.get_values())
-        reward = torch.tensor([reward], device=device)
         state = next_state
+        test_rewards.append(test_att(model, g))
+        train_rewards.append(reward)
+        total_reward += reward
 
-        # Perform one step of the optimization (on the policy network)
-        # print(reward, action_dist[action])
-        loss = loss_fn(reward, action_dist[action])
-        test_rewards.append(test(model, g))
-        train_rewards.append(reward.item())
-        losses.append(loss.item())
-    
-        solution_fitness += 1.0 / (loss.item() + 0.00001)
+    return total_reward
 
-        print(reward, loss.item(), solution_fitness)
-    return solution_fitness
+npop = 1     # population size
+num_episodes = 1
+sigma = 0.1    # noise standard deviation
+alpha = 0.001  # learning rate
+w = initial_weights
+for i in range(num_episodes):
+    R = np.zeros(npop)
+    jitters = {}
+    for param in initial_weights:
+        jitters[param] = []
+    for j in range(npop):
+        w_try = update(w, sigma, jitters)
+        R[j] = fitness(w_try,  train_rewards, test_rewards)
+    if np.sum(R) != 0:
+        A = (R - np.mean(R)) / np.std(R)
+        for param in w:
+            N = torch.stack(jitters[param])
+            w[param] = w[param] + alpha/(npop*sigma) * np.dot(N.T, A)
 
-        
-
-def callback_generation(ga_instance):
-    print("Generation = {generation}".format(generation=ga_instance.generations_completed))
-    print("Fitness    = {fitness}".format(fitness=ga_instance.best_solution()[1]))
-
-
-# Create an instance of the pygad.torchga.TorchGA class to build the initial population.
-torch_ga = torchga.TorchGA(model=model,
-                           num_solutions=10)
-
-
-# Prepare the PyGAD parameters. Check the documentation for more information: https://pygad.readthedocs.io/en/latest/README_pygad_ReadTheDocs.html#pygad-ga-class
-num_generations = 1000 # Number of generations.
-num_parents_mating = 5 # Number of solutions to be selected as parents in the mating pool.
-initial_population = torch_ga.population_weights # Initial population of network weights
-parent_selection_type = "sss" # Type of parent selection.
-crossover_type = "single_point" # Type of the crossover operator.
-mutation_type = "random" # Type of the mutation operator.
-mutation_percent_genes = 10 # Percentage of genes to mutate. This parameter has no action if the parameter mutation_num_genes exists.
-keep_parents = -1 # Number of parents to keep in the next population. -1 means keep all parents and 0 means keep nothing.
-
-ga_instance = pygad.GA(num_generations=num_generations, 
-                       num_parents_mating=num_parents_mating, 
-                       initial_population=initial_population,
-                       fitness_func=fitness_func,
-                       parent_selection_type=parent_selection_type,
-                       crossover_type=crossover_type,
-                       mutation_type=mutation_type,
-                       mutation_percent_genes=mutation_percent_genes,
-                       keep_parents=keep_parents,
-                       on_generation=callback_generation)
-
-ga_instance.run()
-
-# After the generations complete, some plots are showed that summarize how the outputs/fitness values evolve over generations.
-ga_instance.plot_fitness(title="PyGAD & PyTorch - Iteration vs. Fitness", linewidth=4)
-
-# Returning the details of the best solution.
-# solution, solution_fitness, solution_idx = ga_instance.best_solution()
-# print("Fitness value of the best solution = {solution_fitness}".format(solution_fitness=solution_fitness))
-# print("Index of the best solution : {solution_idx}".format(solution_idx=solution_idx))
-
-# Fetch the parameters of the best solution.
-# best_solution_weights = torchga.model_weights_as_dict(model=model,
-#                                                       weights_vector=solution)
-# model.load_state_dict(best_solution_weights)
-
-print(losses)
-print(train_rewards)
-print(test_rewards)
-plot(test_rewards, losses, "configA_es.pdf", BATCH_SIZE)
+ 
