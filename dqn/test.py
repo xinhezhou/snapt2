@@ -7,9 +7,9 @@ import sys
 sys.path.append('..')
 from network import Network
 from utils import plot
-from configD import games 
-# from configB import games
+# from configA import games 
 # from configC import games
+from configAt import games
 
 
 # DQN Set Up
@@ -28,6 +28,4 @@ print(losses)
 print(train_rewards)
 print(test_rewards)
 
-plot(test_rewards, losses, "configD_dqn_def.pdf", BATCH_SIZE)
-# plot(losses, test_rewards, "configB_dqn.pdf", BATCH_SIZE)
-# plot(losses, test_rewards, "configC_dqn.pdf", BATCH_SIZE)
+# plot(test_rewards, losses, "configA_dqn_att.pdf", BATCH_SIZE)

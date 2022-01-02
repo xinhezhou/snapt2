@@ -17,7 +17,7 @@ def train(games, model, optimizer, loss_fn, num_episodes, device):
         state = g.get_states()
         for t in range(g.moves):
             # Select and perform an action
-            action, action_dist = select_action(model, state, 0.2)
+            action, action_dist = select_action(model, g, 0.2)
             g.attack(action)
             next_state = g.get_states()
             reward = torch.tensor([compute_attcker_reward(state, next_state, g.get_values())], device=device)
